@@ -12,11 +12,32 @@ class TaskRepository {
         $this->db = Database::connect();
     }
 
-    public function getAllByUser(int $userId): array {
-        $stmt = $this->db->prepare("SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC");
-        $stmt->execute([$userId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    public function getAllByUser(int $userId, ?string $status = null, ?string $deadline = null, ?string $sortBy = null, ?string $sortOrder = null): array
+    {
+    $sql = "SELECT * FROM tasks WHERE user_id = :user_id";
+    $params = ['user_id' => $userId];
+
+    if ($status) {
+        $sql .= " AND status = :status";
+        $params['status'] = $status;
     }
+
+    if ($deadline) {
+        $sql .= " AND deadline = :deadline";
+        $params['deadline'] = $deadline;
+    }
+
+    if (in_array($sortBy, ['created_at', 'deadline']) && in_array(strtolower($sortOrder), ['asc', 'desc'])) {
+        $sql .= " ORDER BY $sortBy " . strtoupper($sortOrder);
+    } else {
+        $sql .= " ORDER BY created_at DESC";
+    }
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
 
     public function getTaskById(int $taskId): ?array {
         $stmt = $this->db->prepare("SELECT * FROM tasks WHERE id = ?");
